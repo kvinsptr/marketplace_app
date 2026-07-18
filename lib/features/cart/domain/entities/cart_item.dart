@@ -1,33 +1,23 @@
+import '../../../product/domain/entities/product_entity.dart';
+
 class CartItem {
-  final String id;
-  final String name;
-  final String image;
-  final double price;
+  final ProductEntity product;
   final int quantity;
 
   const CartItem({
-    required this.id,
-    required this.name,
-    required this.image,
-    required this.price,
-    this.quantity = 1,
+    required this.product,
+    required this.quantity,
   });
 
+  double get totalPrice => product.price * quantity;
+
   CartItem copyWith({
-    String? id,
-    String? name,
-    String? image,
-    double? price,
+    ProductEntity? product,
     int? quantity,
   }) {
     return CartItem(
-      id: id ?? this.id,
-      name: name ?? this.name,
-      image: image ?? this.image,
-      price: price ?? this.price,
+      product: product ?? this.product,
       quantity: quantity ?? this.quantity,
     );
   }
-
-  double get total => price * quantity;
 }

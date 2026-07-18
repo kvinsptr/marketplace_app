@@ -2,9 +2,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'auth_state.dart';
 import '../../data/user_model.dart';
 import '../../domain/entities/user_entity.dart';
+import 'auth_state.dart';
 
 final authProvider =
     StateNotifierProvider<AuthNotifier, AuthState>((ref) {
@@ -13,208 +13,385 @@ final authProvider =
 
 class AuthNotifier extends StateNotifier<AuthState> {
   AuthNotifier() : super(const AuthState()) {
-    _checkAuth();
+    _auth.authStateChanges().listen((user) {
+      _checkAuth();
+    });
   }
 
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
-  /// ===============================
-  /// GETTER
-  /// ===============================
 
   UserEntity? get currentUser => state.user;
 
   String? get currentRole => state.user?.role;
 
-  bool get isAdmin => state.user?.role == "admin";
+  bool get isAdmin => currentRole == 'admin';
 
-  bool get isSeller => state.user?.role == "seller";
+  bool get isSeller => currentRole == 'seller';
 
-  bool get isBuyer => state.user?.role == "buyer";
+  bool get isBuyer => currentRole == 'buyer';
 
-  /// ===============================
-  /// CHECK LOGIN
-  /// ===============================
 
-  Future<void> _checkAuth() async {
-    try {
-      final firebaseUser = _auth.currentUser;
+  void _setLoading(bool value) {
+    state = state.copyWith(
+      isLoading: value,
+      error: null,
+    );
+  }
 
-      if (firebaseUser == null) {
-        state = const AuthState();
-        return;
-      }
 
-      final user = await _getUserData(firebaseUser.uid);
+  void _setError(String message) {
+    state = state.copyWith(
+      isLoading: false,
+      error: message,
+    );
+  }
 
-      state = AuthState(
-        isAuthenticated: user != null,
-        user: user,
-      );
-    } catch (e) {
-      state = AuthState(error: e.toString());
+
+  void clearError() {
+    state = state.copyWith(
+      error: null,
+    );
+  }
+
+
+  String _firebaseError(FirebaseAuthException e) {
+    switch (e.code) {
+      case 'user-not-found':
+        return 'Email tidak ditemukan';
+
+      case 'wrong-password':
+        return 'Password salah';
+
+      case 'invalid-email':
+        return 'Email tidak valid';
+
+      case 'email-already-in-use':
+        return 'Email sudah digunakan';
+
+      case 'weak-password':
+        return 'Password terlalu lemah';
+
+      case 'network-request-failed':
+        return 'Internet bermasalah';
+
+      default:
+        return e.message ?? 'Terjadi kesalahan';
     }
   }
 
-  /// ===============================
-  /// LOGIN
-  /// ===============================
+
 
   Future<void> login(
     String email,
     String password,
   ) async {
+
     try {
-      state = state.copyWith(
-        isLoading: true,
-        error: null,
+
+      _setLoading(true);
+
+
+      final credential =
+          await _auth.signInWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
       );
 
-      final result = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
 
-      if (!result.user!.emailVerified) {
+      final firebaseUser = credential.user;
+
+
+      if (firebaseUser == null) {
+        _setError("User tidak ditemukan");
+        return;
+      }
+
+
+      await firebaseUser.reload();
+
+
+      if (!firebaseUser.emailVerified) {
+
         await _auth.signOut();
 
-        state = const AuthState(
-          error: "Silakan verifikasi email terlebih dahulu.",
+        _setError(
+          "Silakan verifikasi email terlebih dahulu",
         );
 
         return;
       }
 
-      final user = await _getUserData(result.user!.uid);
+
+
+      final user =
+          await _getUserData(firebaseUser.uid);
+
+
+
+      if (user == null) {
+
+        _setError(
+          "Data user tidak ditemukan di database",
+        );
+
+        return;
+      }
+
+
 
       state = AuthState(
+        isLoading: false,
         isAuthenticated: true,
         user: user,
       );
-    } on FirebaseAuthException catch (e) {
-      state = AuthState(
-        error: e.message,
+
+
+    } on FirebaseAuthException catch(e){
+
+      _setError(
+        _firebaseError(e),
       );
-    } catch (e) {
-      state = AuthState(
-        error: e.toString(),
+
+
+    } catch(e){
+
+      _setError(
+        e.toString(),
       );
+
     }
   }
 
-  /// ===============================
-  /// REGISTER
-  /// ===============================
+
+
+
 
   Future<void> register(
     String email,
     String password,
     String role,
   ) async {
+
     try {
-      state = state.copyWith(
-        isLoading: true,
-        error: null,
+
+      _setLoading(true);
+
+
+      final result =
+          await _auth.createUserWithEmailAndPassword(
+        email: email.trim(),
+        password: password.trim(),
       );
 
-      final result = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
 
       final uid = result.user!.uid;
 
-      final user = UserModel(
-        uid: uid,
-        email: email,
-        role: role,
-      );
 
-      await _firestore.collection("users").doc(uid).set({
-        ...user.toMap(),
-        "createdAt": FieldValue.serverTimestamp(),
+
+      await _firestore
+          .collection('users')
+          .doc(uid)
+          .set({
+
+        'uid': uid,
+        'email': email.trim(),
+        'role': role,
+        'createdAt':
+            FieldValue.serverTimestamp(),
+
       });
 
-      await result.user!.sendEmailVerification();
 
-      state = AuthState(
-        isAuthenticated: true,
-        user: UserEntity(
-          uid: uid,
-          email: email,
-          role: role,
-        ),
-      );
-    } on FirebaseAuthException catch (e) {
-      state = AuthState(
-        error: e.message,
-      );
-    } catch (e) {
-      state = AuthState(
-        error: e.toString(),
-      );
-    }
-  }
 
-  /// ===============================
-  /// REFRESH USER
-  /// ===============================
+      await result.user!
+          .sendEmailVerification();
 
-  Future<void> refreshUser() async {
-    final firebaseUser = _auth.currentUser;
 
-    if (firebaseUser == null) return;
-
-    final user = await _getUserData(firebaseUser.uid);
-
-    state = state.copyWith(
-      user: user,
-      isAuthenticated: user != null,
-    );
-  }
-
-  /// ===============================
-  /// GET USER
-  /// ===============================
-
-  Future<UserEntity?> _getUserData(
-    String uid,
-  ) async {
-    final doc =
-        await _firestore.collection("users").doc(uid).get();
-
-    if (!doc.exists) {
-      return null;
-    }
-
-    final model = UserModel.fromMap(doc.data()!);
-
-    return UserEntity(
-      uid: model.uid,
-      email: model.email,
-      role: model.role,
-    );
-  }
-
-  /// ===============================
-  /// LOGOUT
-  /// ===============================
-
-  Future<void> logout() async {
-    try {
-      state = state.copyWith(
-        isLoading: true,
-      );
 
       await _auth.signOut();
 
-      state = const AuthState();
-    } catch (e) {
-      state = state.copyWith(
-        error: e.toString(),
+
+
+      state = const AuthState(
         isLoading: false,
+        error:
+          "Registrasi berhasil. Silakan cek email untuk verifikasi.",
       );
+
+
+    } on FirebaseAuthException catch(e){
+
+      _setError(
+        _firebaseError(e),
+      );
+
+
+    } catch(e){
+
+      _setError(
+        e.toString(),
+      );
+
     }
   }
+
+
+
+
+
+
+  Future<void> _checkAuth() async {
+
+    try {
+
+      final firebaseUser =
+          _auth.currentUser;
+
+
+      if(firebaseUser == null){
+
+        state = const AuthState();
+
+        return;
+      }
+
+
+
+      await firebaseUser.reload();
+
+
+
+      if(!firebaseUser.emailVerified){
+
+        state = const AuthState();
+
+        return;
+
+      }
+
+
+
+      final user =
+          await _getUserData(
+            firebaseUser.uid,
+          );
+
+
+      if(user != null){
+
+        state = AuthState(
+          isAuthenticated: true,
+          user: user,
+        );
+
+      }
+
+
+
+    } catch(e){
+
+      _setError(
+        e.toString(),
+      );
+
+    }
+
+  }
+
+
+
+
+
+
+
+  Future<UserEntity?> _getUserData(
+      String uid,
+      ) async {
+
+
+    try {
+
+
+      final doc =
+          await _firestore
+              .collection('users')
+              .doc(uid)
+              .get();
+
+
+
+      print(
+        "FIRESTORE USER : ${doc.data()}",
+      );
+
+
+
+      if(!doc.exists){
+
+        print(
+          "USER DOCUMENT TIDAK ADA",
+        );
+
+        return null;
+
+      }
+
+
+
+      final data = doc.data()!;
+
+
+
+      return UserEntity(
+
+        uid: data['uid'] ?? uid,
+
+        email: data['email'] ?? '',
+
+        role: data['role'] ?? 'buyer',
+
+      );
+
+
+
+    } catch(e){
+
+
+      print(
+        "GET USER ERROR : $e",
+      );
+
+
+      return null;
+
+    }
+
+  }
+
+
+
+
+
+
+  Future<void> refreshUser() async {
+
+    await _checkAuth();
+
+  }
+
+
+
+
+
+
+  Future<void> logout() async {
+
+    await _auth.signOut();
+
+    state = const AuthState();
+
+  }
+
 }
