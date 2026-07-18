@@ -1,11 +1,20 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class ProfilePage extends StatelessWidget {
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+class ProfilePage extends ConsumerWidget {
   const ProfilePage({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final auth = ref.watch(authProvider);
+
     return Scaffold(
+      appBar: AppBar(
+        title: const Text("Profile"),
+        centerTitle: true,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(20),
@@ -22,19 +31,19 @@ class ProfilePage extends StatelessWidget {
 
               const SizedBox(height: 15),
 
-              const Text(
-                "Kevin Saputra",
-                style: TextStyle(
-                  fontSize: 24,
+              Text(
+                auth.user?.email ?? "User",
+                style: const TextStyle(
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
               ),
 
               const SizedBox(height: 5),
 
-              const Text(
-                "Buyer Account",
-                style: TextStyle(
+              Text(
+                "${auth.user?.role ?? 'Buyer'} Account",
+                style: const TextStyle(
                   color: Colors.grey,
                 ),
               ),
@@ -75,10 +84,43 @@ class ProfilePage extends StatelessWidget {
 
               SizedBox(
                 width: double.infinity,
+                height: 50,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
                   icon: const Icon(Icons.logout),
                   label: const Text("Logout"),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.white,
+                  ),
+                  onPressed: () async {
+                    final logout = await showDialog<bool>(
+                      context: context,
+                      builder: (context) => AlertDialog(
+                        title: const Text("Logout"),
+                        content: const Text(
+                          "Apakah Anda yakin ingin logout?",
+                        ),
+                        actions: [
+                          TextButton(
+                            onPressed: () =>
+                                Navigator.pop(context, false),
+                            child: const Text("Batal"),
+                          ),
+                          ElevatedButton(
+                            onPressed: () =>
+                                Navigator.pop(context, true),
+                            child: const Text("Logout"),
+                          ),
+                        ],
+                      ),
+                    );
+
+                    if (logout == true) {
+                      await ref
+                          .read(authProvider.notifier)
+                          .logout();
+                    }
+                  },
                 ),
               ),
             ],
