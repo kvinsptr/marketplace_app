@@ -1,66 +1,83 @@
-  name: marketplace_app
-  description: "Marketplace Mobile App"
+name: marketplace_app
+description: Marketplace Mobile App
 
-  publish_to: 'none'
+publish_to: "none"
 
-  version: 1.0.0+1
+version: 1.0.0+1
 
-  environment:
-    sdk: ^3.11.5
+environment:
+  sdk: ">=3.11.0 <4.0.0"
 
-  dependencies:
-    flutter:
-      sdk: flutter
-
-    cupertino_icons: ^1.0.8
-
-    # State Management
-    flutter_riverpod: ^2.6.1
-
-    # Network
-    dio: ^5.9.0
-    pretty_dio_logger: ^1.4.0
-    connectivity_plus: ^7.0.0
-
-    # Routing
-    go_router: ^16.0.0
-
-    # Local Storage
-    hive: ^2.2.3
-    hive_flutter: ^1.1.0
-
-    # Secure Storage
-    flutter_secure_storage: ^9.2.4
-
-    # Firebase
-    firebase_core: ^4.0.0
-    firebase_auth: ^6.0.1
-    firebase_messaging: ^16.0.0
-    cloud_firestore: ^6.0.0
-
-    # Image
-    cached_network_image: ^3.4.1
-
-    # Localization
-    flutter_localizations:
-      sdk: flutter
-    intl: ^0.20.2
-
-    # Utilities
-    equatable: ^2.0.7
-    uuid: ^4.5.1
-    logger: ^2.6.1
-
-  dev_dependencies:
-    flutter_test:
-      sdk: flutter
-
-    flutter_lints: ^6.0.0
-
+dependencies:
   flutter:
-    uses-material-design: true
+    sdk: flutter
 
-    assets:
-      - assets/images/
-      - assets/icons/
-      - assets/translations/
+  cupertino_icons: ^1.0.8
+
+  # State Management
+  flutter_riverpod: ^2.6.1
+
+  # Network
+  dio: ^5.9.0
+  pretty_dio_logger: ^1.4.0
+  connectivity_plus: ^7.0.0
+
+  # Routing
+  go_router: ^16.0.0
+
+  # Local Database
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+
+  # Secure Storage
+  flutter_secure_storage: ^9.2.4
+
+  # Firebase
+  firebase_core: ^4.0.0
+  firebase_auth: ^6.0.1
+  firebase_messaging: ^16.0.0
+  cloud_firestore: ^6.0.0
+  firebase_storage: ^13.0.0
+
+  # Maps
+  google_maps_flutter: ^2.12.3
+  geolocator: ^14.0.2
+  geocoding: ^4.0.0
+
+  # Payment
+  webview_flutter: ^4.13.0
+  url_launcher: ^6.3.2
+
+  # Image
+  image_picker: ^1.2.0
+  cached_network_image: ^3.4.1
+
+  # Notification
+  flutter_local_notifications: ^19.4.0
+
+  # Localization
+  flutter_localizations:
+    sdk: flutter
+  intl: ^0.20.2
+
+  # Theme
+  flex_color_scheme: ^8.2.0
+
+  # Utilities
+  equatable: ^2.0.7
+  uuid: ^4.5.1
+  logger: ^2.6.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
+    - assets/translations/
