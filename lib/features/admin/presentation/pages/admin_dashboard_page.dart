@@ -3,116 +3,348 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../auth/presentation/providers/auth_provider.dart';
 
+import 'admin_users_page.dart';
+import 'admin_products_page.dart';
+import 'admin_orders_page.dart';
+
+
+
 class AdminDashboardPage extends ConsumerWidget {
-  const AdminDashboardPage({super.key});
 
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authProvider).user;
 
-    return Scaffold(
-      appBar: AppBar(
-        title: const Text("Admin Dashboard"),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            onPressed: () {
-              ref.read(authProvider.notifier).logout();
-            },
-            icon: const Icon(Icons.logout),
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Card(
-              child: ListTile(
-                leading: const CircleAvatar(
-                  child: Icon(Icons.admin_panel_settings),
-                ),
-                title: Text(user?.email ?? "Admin"),
-                subtitle: const Text("Administrator"),
-              ),
-            ),
-
-            const SizedBox(height: 20),
-
-            GridView.count(
-              crossAxisCount: 2,
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              crossAxisSpacing: 15,
-              mainAxisSpacing: 15,
-              children: const [
-                DashboardCard(
-                  icon: Icons.people,
-                  title: "Kelola User",
-                ),
-                DashboardCard(
-                  icon: Icons.store,
-                  title: "Kelola Produk",
-                ),
-                DashboardCard(
-                  icon: Icons.shopping_cart,
-                  title: "Kelola Order",
-                ),
-                DashboardCard(
-                  icon: Icons.bar_chart,
-                  title: "Laporan",
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            Card(
-              child: ListTile(
-                leading: const Icon(Icons.info),
-                title: const Text("Statistik"),
-                subtitle: const Text(
-                  "Total User : 0\n"
-                  "Total Produk : 0\n"
-                  "Total Order : 0",
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-class DashboardCard extends StatelessWidget {
-  final IconData icon;
-  final String title;
-
-  const DashboardCard({
+  const AdminDashboardPage({
     super.key,
-    required this.icon,
-    required this.title,
   });
 
+
+
+
   @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: InkWell(
-        borderRadius: BorderRadius.circular(12),
-        onTap: () {},
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 45),
-            const SizedBox(height: 12),
-            Text(
-              title,
-              textAlign: TextAlign.center,
+  Widget build(
+      BuildContext context,
+      WidgetRef ref,
+  ) {
+
+
+    return Scaffold(
+
+
+      appBar: AppBar(
+
+
+        title:
+            const Text(
+              "Admin Dashboard",
             ),
-          ],
-        ),
+
+
+
+        backgroundColor:
+            Colors.deepPurple,
+
+
+
+        foregroundColor:
+            Colors.white,
+
+
+
+        actions: [
+
+
+          IconButton(
+
+
+            icon:
+                const Icon(
+                  Icons.logout,
+                ),
+
+
+
+            tooltip:
+                "Logout",
+
+
+
+
+            onPressed: () async {
+
+
+
+              await ref
+                  .read(authProvider.notifier)
+                  .logout();
+
+
+
+
+              if(context.mounted){
+
+
+                Navigator.pushNamedAndRemoveUntil(
+
+                  context,
+
+                  '/login',
+
+                  (route)=>false,
+
+                );
+
+
+              }
+
+
+
+            },
+
+
+          ),
+
+
+
+        ],
+
+
+
       ),
+
+
+
+
+
+      body:
+          Padding(
+
+
+        padding:
+            const EdgeInsets.all(20),
+
+
+
+
+        child:
+            Column(
+
+
+          children: [
+
+
+
+            _menuCard(
+
+              context,
+
+              icon:
+                  Icons.people,
+
+
+              title:
+                  "User Management",
+
+
+
+              page:
+                  const AdminUsersPage(),
+
+
+            ),
+
+
+
+
+
+            _menuCard(
+
+              context,
+
+              icon:
+                  Icons.inventory,
+
+
+
+              title:
+                  "Product Management",
+
+
+
+              page:
+                  const AdminProductsPage(),
+
+
+            ),
+
+
+
+
+
+
+            _menuCard(
+
+              context,
+
+              icon:
+                  Icons.shopping_cart,
+
+
+
+              title:
+                  "Order Management",
+
+
+
+              page:
+                  const AdminOrdersPage(),
+
+
+            ),
+
+
+
+          ],
+
+
+
+        ),
+
+
+
+      ),
+
+
+
     );
+
+
   }
+
+
+
+
+
+
+
+
+
+Widget _menuCard(
+
+    BuildContext context, {
+
+    required IconData icon,
+
+    required String title,
+
+    required Widget page,
+
+}) {
+
+
+  return Card(
+
+
+    margin:
+        const EdgeInsets.only(
+          bottom:15,
+        ),
+
+
+
+
+    child:
+        ListTile(
+
+
+
+      leading:
+          CircleAvatar(
+
+
+        child:
+            Icon(icon),
+
+
+
+      ),
+
+
+
+
+
+
+      title:
+          Text(
+
+
+            title,
+
+
+            style:
+                const TextStyle(
+
+
+              fontWeight:
+                  FontWeight.bold,
+
+
+
+            ),
+
+
+
+          ),
+
+
+
+
+
+
+      trailing:
+          const Icon(
+
+            Icons.arrow_forward_ios,
+
+          ),
+
+
+
+
+
+
+      onTap: (){
+
+
+        Navigator.push(
+
+
+          context,
+
+
+          MaterialPageRoute(
+
+
+            builder:(_)=>page,
+
+
+          ),
+
+
+        );
+
+
+      },
+
+
+
+    ),
+
+
+
+  );
+
+
+}
+
+
+
 }

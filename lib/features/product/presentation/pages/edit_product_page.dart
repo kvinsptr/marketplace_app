@@ -1,26 +1,30 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-
-import '../../../auth/presentation/providers/auth_provider.dart';
-
-import '../../../seller/presentation/providers/seller_product_provider.dart';
-
 import '../../domain/models/product_model.dart';
 
-class AddProductPage extends ConsumerStatefulWidget {
+import '../providers/product_provider.dart';
 
 
-  const AddProductPage({
+
+class EditProductPage extends ConsumerStatefulWidget {
+
+  final ProductModel product;
+
+
+  const EditProductPage({
+
     super.key,
+
+    required this.product,
+
   });
 
 
 
   @override
-  ConsumerState<AddProductPage> createState() =>
-      _AddProductPageState();
-
+  ConsumerState<EditProductPage> createState() =>
+      _EditProductPageState();
 
 }
 
@@ -28,27 +32,54 @@ class AddProductPage extends ConsumerStatefulWidget {
 
 
 
-
-class _AddProductPageState
-    extends ConsumerState<AddProductPage> {
-
+class _EditProductPageState
+    extends ConsumerState<EditProductPage> {
 
 
-  final nameController =
-      TextEditingController();
 
+  late TextEditingController nameController;
 
-  final priceController =
-      TextEditingController();
+  late TextEditingController priceController;
 
-
-  final descController =
-      TextEditingController();
-
+  late TextEditingController descController;
 
 
 
   bool isLoading = false;
+
+
+
+
+
+
+
+  @override
+  void initState() {
+
+    super.initState();
+
+
+
+    nameController =
+        TextEditingController(
+          text: widget.product.name,
+        );
+
+
+
+    priceController =
+        TextEditingController(
+          text: widget.product.price.toString(),
+        );
+
+
+
+    descController =
+        TextEditingController(
+          text: widget.product.description,
+        );
+
+  }
 
 
 
@@ -69,7 +100,6 @@ class _AddProductPageState
 
     super.dispose();
 
-
   }
 
 
@@ -79,15 +109,13 @@ class _AddProductPageState
 
 
 
-
-  Future<void> saveProduct() async {
-
+  Future<void> updateProduct() async {
 
 
-    if(
-      nameController.text.trim().isEmpty ||
-      priceController.text.trim().isEmpty
-    ){
+
+    if(nameController.text.trim().isEmpty ||
+       priceController.text.trim().isEmpty){
+
 
 
       ScaffoldMessenger.of(context)
@@ -104,36 +132,6 @@ class _AddProductPageState
 
       );
 
-
-      return;
-
-
-    }
-
-
-
-
-
-
-    final user =
-        ref.read(authProvider).user;
-
-
-
-
-    if(user == null){
-
-      ScaffoldMessenger.of(context)
-          .showSnackBar(
-
-        const SnackBar(
-          content:
-              Text(
-                "Silakan login terlebih dahulu",
-              ),
-        ),
-
-      );
 
       return;
 
@@ -157,40 +155,35 @@ class _AddProductPageState
 
 
 
-    final product = ProductModel(
-
+    final updatedProduct =
+        ProductModel(
 
 
       id:
-          "",
-
+          widget.product.id,
 
 
       name:
           nameController.text.trim(),
 
 
-
       price:
           double.tryParse(
             priceController.text.trim(),
-          ) ?? 0,
-
+          ) ??
+          0,
 
 
       description:
           descController.text.trim(),
 
 
-
       sellerId:
-          user.uid,
-
+          widget.product.sellerId,
 
 
       imageUrl:
-          "",
-
+          widget.product.imageUrl,
 
 
     );
@@ -201,14 +194,13 @@ class _AddProductPageState
 
 
 
-
     await ref
         .read(
-          sellerProductRepositoryProvider,
+          productRepositoryProvider,
         )
-        .createProduct(product);
-
-
+        .updateProduct(
+          updatedProduct,
+        );
 
 
 
@@ -222,8 +214,6 @@ class _AddProductPageState
 
 
 
-
-
     setState(() {
 
       isLoading = false;
@@ -231,23 +221,6 @@ class _AddProductPageState
     });
 
 
-
-
-
-
-    ScaffoldMessenger.of(context)
-        .showSnackBar(
-
-      const SnackBar(
-
-        content:
-            Text(
-              "Produk berhasil ditambahkan",
-            ),
-
-      ),
-
-    );
 
 
 
@@ -267,6 +240,7 @@ class _AddProductPageState
 
 
 
+
   @override
   Widget build(BuildContext context) {
 
@@ -274,17 +248,20 @@ class _AddProductPageState
     return Scaffold(
 
 
+
       appBar: AppBar(
 
 
         title:
             const Text(
-              "Tambah Produk",
+              "Edit Produk",
             ),
+
 
 
         backgroundColor:
             Colors.deepPurple,
+
 
 
         foregroundColor:
@@ -298,9 +275,9 @@ class _AddProductPageState
 
 
 
-
       body:
           SingleChildScrollView(
+
 
 
         padding:
@@ -312,7 +289,9 @@ class _AddProductPageState
             Column(
 
 
+
           children: [
+
 
 
 
@@ -330,13 +309,6 @@ class _AddProductPageState
 
                 labelText:
                     "Nama Produk",
-
-
-                prefixIcon:
-                    Icon(
-                      Icons.inventory,
-                    ),
-
 
               ),
 
@@ -369,21 +341,11 @@ class _AddProductPageState
                   TextInputType.number,
 
 
-
               decoration:
                   const InputDecoration(
 
-
                 labelText:
                     "Harga",
-
-
-
-                prefixIcon:
-                    Icon(
-                      Icons.money,
-                    ),
-
 
               ),
 
@@ -418,22 +380,11 @@ class _AddProductPageState
                   5,
 
 
-
               decoration:
                   const InputDecoration(
 
-
                 labelText:
                     "Deskripsi Produk",
-
-
-
-                prefixIcon:
-                    Icon(
-                      Icons.description,
-                    ),
-
-
 
               ),
 
@@ -457,12 +408,12 @@ class _AddProductPageState
 
 
 
+
             SizedBox(
 
 
               width:
                   double.infinity,
-
 
 
               height:
@@ -475,17 +426,13 @@ class _AddProductPageState
 
 
 
-
                 style:
                     ElevatedButton.styleFrom(
-
 
                   backgroundColor:
                       Colors.deepPurple,
 
-
                 ),
-
 
 
 
@@ -494,7 +441,8 @@ class _AddProductPageState
                 onPressed:
                     isLoading
                     ? null
-                    : saveProduct,
+                    : updateProduct,
+
 
 
 
@@ -503,38 +451,32 @@ class _AddProductPageState
 
                 child:
 
+
                     isLoading
+
 
                     ?
 
+
                     const CircularProgressIndicator(
-
-                      color:
-                          Colors.white,
-
+                      color: Colors.white,
                     )
 
 
                     :
 
+
                     const Text(
 
-
-                      "Simpan Produk",
-
-
+                      "Update Produk",
 
                       style:
                           TextStyle(
 
-
                         color:
                             Colors.white,
 
-
                       ),
-
-
 
                     ),
 
@@ -543,14 +485,11 @@ class _AddProductPageState
               ),
 
 
-
             ),
 
 
 
-
           ],
-
 
 
         ),

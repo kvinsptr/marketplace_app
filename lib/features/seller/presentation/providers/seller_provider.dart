@@ -1,68 +1,16 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
+import '../../data/repositories/seller_repository.dart';
+import '../../data/repositories/seller_repository_impl.dart';
+import '../../domain/models/seller_stats.dart';
 
-class SellerState {
+final sellerRepositoryProvider = Provider<SellerRepository>((ref) {
+  return SellerRepositoryImpl();
+});
 
-  final int totalProduct;
-
-  final int totalOrder;
-
-  final double income;
-
-
-  const SellerState({
-
-    this.totalProduct = 0,
-
-    this.totalOrder = 0,
-
-    this.income = 0,
-
-  });
-
-
-}
-
-
-
-class SellerNotifier extends StateNotifier<SellerState> {
-
-
-  SellerNotifier()
-      : super(
-          const SellerState(),
-        );
-
-
-  void addProduct(){
-
-    state = SellerState(
-
-      totalProduct:
-          state.totalProduct + 1,
-
-      totalOrder:
-          state.totalOrder,
-
-      income:
-          state.income,
-
-    );
-
-  }
-
-
-}
-
-
-
-final sellerProvider =
-    StateNotifierProvider<SellerNotifier, SellerState>(
-
-  (ref){
-
-    return SellerNotifier();
-
-  },
-
-);
+final sellerStatsProvider =
+    FutureProvider.family<SellerStats, String>((ref, sellerId) {
+  return ref
+      .read(sellerRepositoryProvider)
+      .getSellerStats(sellerId);
+});

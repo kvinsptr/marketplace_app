@@ -1,8 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+import '../providers/seller_order_provider.dart';
 
 
 
-class SellerOrdersPage extends StatelessWidget {
+
+
+class SellerOrdersPage extends ConsumerWidget {
+
 
   const SellerOrdersPage({
     super.key,
@@ -10,11 +19,93 @@ class SellerOrdersPage extends StatelessWidget {
 
 
 
+
+
+
+  Future<void> updateStatus(
+      WidgetRef ref,
+      String orderId,
+      String status,
+      ) async {
+
+
+    await ref
+        .read(
+          sellerOrderRepositoryProvider,
+        )
+        .updateOrderStatus(
+
+          orderId,
+
+          status,
+
+        );
+
+
+  }
+
+
+
+
+
+
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+      BuildContext context,
+      WidgetRef ref,
+      ) {
+
+
+
+    final user =
+        ref.watch(authProvider)
+            .user;
+
+
+
+
+    if(user == null){
+
+
+      return const Scaffold(
+
+        body:
+            Center(
+
+          child:
+              Text(
+                "Belum login",
+              ),
+
+        ),
+
+      );
+
+
+    }
+
+
+
+
+
+
+
+    final orders =
+        ref.watch(
+          sellerOrdersProvider(
+            user.uid,
+          ),
+        );
+
+
+
+
+
 
 
     return Scaffold(
+
 
 
       appBar: AppBar(
@@ -32,146 +123,268 @@ class SellerOrdersPage extends StatelessWidget {
         foregroundColor:
             Colors.white,
 
+
       ),
 
 
 
 
-      body: Padding(
-
-        padding:
-            const EdgeInsets.all(16),
 
 
-        child: Column(
+      body:
+
+      orders.when(
 
 
-          crossAxisAlignment:
-              CrossAxisAlignment.start,
 
+        loading: () =>
 
-          children: [
+            const Center(
 
-
-            const Text(
-
-              "Daftar Pesanan",
-
-              style:
-                  TextStyle(
-
-                fontSize:
-                    20,
-
-                fontWeight:
-                    FontWeight.bold,
-
-              ),
+              child:
+                  CircularProgressIndicator(),
 
             ),
 
 
 
-            const SizedBox(
-              height:20,
+
+
+
+        error:(error,stack)=>
+
+            Center(
+
+              child:
+                  Text(
+                    error.toString(),
+                  ),
+
             ),
 
 
 
 
-            Expanded(
 
 
-              child: Center(
-
-
-                child: Column(
-
-
-                  mainAxisAlignment:
-                      MainAxisAlignment.center,
-
-
-                  children: [
-
-
-                    const Icon(
-
-                      Icons.shopping_bag_outlined,
-
-                      size:
-                          80,
-
-                      color:
-                          Colors.grey,
-
-                    ),
+        data:(items){
 
 
 
-                    const SizedBox(
-                      height:15,
-                    ),
+          if(items.isEmpty){
+
+
+            return const Center(
+
+              child:
+                  Text(
+                    "Belum ada pesanan",
+                  ),
+
+            );
+
+
+          }
 
 
 
 
-                    const Text(
 
-                      "Belum ada pesanan",
 
-                      style:
-                          TextStyle(
+          return ListView.builder(
 
-                        fontSize:
-                            18,
 
-                        fontWeight:
-                            FontWeight.bold,
+
+            padding:
+                const EdgeInsets.all(16),
+
+
+
+            itemCount:
+                items.length,
+
+
+
+            itemBuilder:
+                (context,index){
+
+
+
+              final order =
+                  items[index];
+
+
+
+
+
+
+              return Card(
+
+
+
+                child:
+                    ListTile(
+
+
+
+                  leading:
+                      const Icon(
+                        Icons.shopping_bag,
+                      ),
+
+
+
+
+
+                  title:
+                      Text(
+
+                    order["productName"] ??
+                    "Produk",
+
+                  ),
+
+
+
+
+
+                  subtitle:
+                      Column(
+
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
+
+
+                    children: [
+
+
+                      Text(
+                        "Jumlah: ${order["quantity"] ?? 1}",
+                      ),
+
+
+                      Text(
+                        "Status: ${order["status"] ?? "pending"}",
+                      ),
+
+
+                    ],
+
+
+                  ),
+
+
+
+
+
+
+                  trailing:
+                      PopupMenuButton(
+
+
+
+                    itemBuilder:
+                        (context)=>[
+
+
+
+                      const PopupMenuItem(
+
+                        value:
+                            "diproses",
+
+                        child:
+                            Text(
+                              "Diproses",
+                            ),
 
                       ),
 
-                    ),
 
 
 
-                    const SizedBox(
-                      height:8,
-                    ),
+                      const PopupMenuItem(
+
+                        value:
+                            "dikirim",
+
+                        child:
+                            Text(
+                              "Dikirim",
+                            ),
+
+                      ),
 
 
 
 
-                    const Text(
+                      const PopupMenuItem(
 
-                      "Pesanan dari buyer akan muncul di sini",
+                        value:
+                            "selesai",
 
-                      textAlign:
-                          TextAlign.center,
+                        child:
+                            Text(
+                              "Selesai",
+                            ),
 
-                    ),
+                      ),
 
 
 
-                  ],
+                    ],
+
+
+
+
+                    onSelected:(value){
+
+
+                      updateStatus(
+
+                        ref,
+
+                        order["id"],
+
+                        value.toString(),
+
+                      );
+
+
+                    },
+
+
+
+                  ),
+
+
 
                 ),
 
-              ),
-
-            ),
 
 
+              );
 
-          ],
 
-        ),
+            },
+
+
+          );
+
+
+
+        },
+
+
 
       ),
+
 
 
     );
 
+
   }
+
 
 }

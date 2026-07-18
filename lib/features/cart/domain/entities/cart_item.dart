@@ -1,23 +1,53 @@
-import '../../../product/domain/entities/product_entity.dart';
+import '../../../product/domain/models/product_model.dart';
+
 
 class CartItem {
-  final ProductEntity product;
+
+  final ProductModel product;
+
   final int quantity;
 
+
+
   const CartItem({
+
     required this.product,
+
     required this.quantity,
+
   });
 
-  double get totalPrice => product.price * quantity;
+
+
+
+  double get totalPrice =>
+      product.price * quantity;
+
+
+
+
 
   CartItem copyWith({
-    ProductEntity? product,
+
+    ProductModel? product,
+
     int? quantity,
+
   }) {
+
+
     return CartItem(
-      product: product ?? this.product,
-      quantity: quantity ?? this.quantity,
+
+      product:
+          product ?? this.product,
+
+      quantity:
+          quantity ?? this.quantity,
+
     );
+
+
   }
+
+
 }

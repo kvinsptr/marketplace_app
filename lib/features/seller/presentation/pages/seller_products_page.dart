@@ -1,49 +1,50 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import '../../../auth/presentation/providers/auth_provider.dart';
+
+import '../../../product/domain/models/product_model.dart';
+
+import '../../../product/presentation/providers/product_provider.dart';
 
 import '../../../product/presentation/pages/add_product_page.dart';
+import '../../../product/presentation/pages/edit_product_page.dart';
 
 
 
-class SellerProductsPage extends StatefulWidget {
+class SellerProductsPage extends ConsumerWidget {
 
   const SellerProductsPage({
     super.key,
   });
 
 
-  @override
-  State<SellerProductsPage> createState() =>
-      _SellerProductsPageState();
 
-}
+  Future<void> deleteProduct(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) async {
 
-
-
-
-class _SellerProductsPageState
-    extends State<SellerProductsPage> {
-
-
-  final List<Map<String, dynamic>> products = [];
+    await ref
+        .read(
+          productRepositoryProvider,
+        )
+        .deleteProduct(id);
 
 
 
-  void openAddProduct() async {
+    ScaffoldMessenger.of(context)
+        .showSnackBar(
 
-
-    await Navigator.push(
-
-      context,
-
-      MaterialPageRoute(
-
-        builder: (_) =>
-            const AddProductPage(),
-
+      const SnackBar(
+        content:
+            Text(
+              "Produk berhasil dihapus",
+            ),
       ),
 
     );
-
 
   }
 
@@ -51,8 +52,136 @@ class _SellerProductsPageState
 
 
 
+  void confirmDelete(
+    BuildContext context,
+    WidgetRef ref,
+    String id,
+  ) {
+
+    showDialog(
+
+      context: context,
+
+      builder: (context){
+
+        return AlertDialog(
+
+          title:
+              const Text(
+                "Hapus Produk",
+              ),
+
+
+          content:
+              const Text(
+                "Yakin ingin menghapus produk ini?",
+              ),
+
+
+
+          actions: [
+
+
+            TextButton(
+
+              onPressed: (){
+
+                Navigator.pop(context);
+
+              },
+
+              child:
+                  const Text(
+                    "Batal",
+                  ),
+
+            ),
+
+
+
+
+            ElevatedButton(
+
+              onPressed: (){
+
+                Navigator.pop(context);
+
+
+                deleteProduct(
+                  context,
+                  ref,
+                  id,
+                );
+
+              },
+
+              child:
+                  const Text(
+                    "Hapus",
+                  ),
+
+            ),
+
+
+          ],
+
+        );
+
+      },
+
+    );
+
+  }
+
+
+
+
+
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(
+    BuildContext context,
+    WidgetRef ref,
+  ) {
+
+
+    final user =
+        ref.watch(authProvider)
+            .user;
+
+
+
+    if(user == null){
+
+      return const Scaffold(
+
+        body:
+            Center(
+
+          child:
+              Text(
+                "Belum login",
+              ),
+
+        ),
+
+      );
+
+    }
+
+
+
+
+
+
+    final products =
+        ref.watch(
+          productProvider,
+        );
+
+
+
+
 
 
     return Scaffold(
@@ -65,16 +194,17 @@ class _SellerProductsPageState
               "Produk Saya",
             ),
 
-
         backgroundColor:
             Colors.deepPurple,
-
 
         foregroundColor:
             Colors.white,
 
-
       ),
+
+
+
+
 
 
 
@@ -90,14 +220,31 @@ class _SellerProductsPageState
             Colors.white,
 
 
-        onPressed:
-            openAddProduct,
+        onPressed: (){
+
+
+          Navigator.push(
+
+            context,
+
+            MaterialPageRoute(
+
+              builder: (_) =>
+                  const AddProductPage(),
+
+            ),
+
+          );
+
+
+        },
 
 
         icon:
             const Icon(
               Icons.add,
             ),
+
 
 
         label:
@@ -112,51 +259,161 @@ class _SellerProductsPageState
 
 
 
-      body: products.isEmpty
 
 
-          ? Center(
+      body:
+
+      products.when(
 
 
-              child: Column(
+
+        loading: ()=>
 
 
-                mainAxisAlignment:
-                    MainAxisAlignment.center,
+            const Center(
+
+              child:
+                  CircularProgressIndicator(),
+
+            ),
 
 
-                children: [
 
 
-                  const Icon(
 
-                    Icons.inventory_2_outlined,
 
-                    size:
-                        80,
+        error:(error,stack)=>
 
-                    color:
-                        Colors.grey,
 
+            Center(
+
+              child:
+                  Text(
+                    error.toString(),
                   ),
 
-
-
-                  const SizedBox(
-                    height:15,
-                  ),
+            ),
 
 
 
-                  const Text(
 
+
+
+        data:(items){
+
+
+
+          final sellerItems =
+              items
+                  .where(
+                    (product) =>
+                        product.sellerId ==
+                        user.uid,
+                  )
+                  .toList();
+
+
+
+
+
+
+          if(sellerItems.isEmpty){
+
+
+            return const Center(
+
+              child:
+                  Text(
                     "Belum ada produk",
+                  ),
+
+            );
+
+
+          }
+
+
+
+
+
+
+
+
+          return ListView.builder(
+
+
+
+            padding:
+                const EdgeInsets.all(16),
+
+
+
+            itemCount:
+                sellerItems.length,
+
+
+
+            itemBuilder:
+                (context,index){
+
+
+
+              final ProductModel product =
+                  sellerItems[index];
+
+
+
+
+
+
+
+              return Card(
+
+
+                margin:
+                    const EdgeInsets.only(
+                      bottom:12,
+                    ),
+
+
+
+                child:
+                    ListTile(
+
+
+
+                  leading:
+
+                      CircleAvatar(
+
+                        backgroundColor:
+                            Colors.deepPurple,
+
+
+                        child:
+                            const Icon(
+
+                          Icons.inventory,
+
+                          color:
+                              Colors.white,
+
+                        ),
+
+                      ),
+
+
+
+
+
+
+                  title:
+                      Text(
+
+                    product.name,
 
                     style:
-                        TextStyle(
-
-                      fontSize:
-                          18,
+                        const TextStyle(
 
                       fontWeight:
                           FontWeight.bold,
@@ -167,96 +424,175 @@ class _SellerProductsPageState
 
 
 
-                  const SizedBox(
-                    height:8,
-                  ),
 
 
 
-                  const Text(
+                  subtitle:
+                      Column(
 
-                    "Tambahkan produk pertama Anda",
-
-                  ),
-
-
-                ],
-
-              ),
-
-            )
+                    crossAxisAlignment:
+                        CrossAxisAlignment.start,
 
 
-
-          : ListView.builder(
-
-
-              padding:
-                  const EdgeInsets.all(16),
+                    children: [
 
 
-
-              itemCount:
-                  products.length,
-
-
-
-              itemBuilder:
-                  (context,index){
+                      Text(
+                        "Rp ${product.price}",
+                      ),
 
 
-                final product =
-                    products[index];
+                      Text(
+                        product.description,
+                      ),
 
 
-
-                return Card(
-
-                  child: ListTile(
-
-
-                    leading:
-                        const Icon(
-
-                      Icons.inventory,
-
-                      color:
-                          Colors.deepPurple,
-
-                    ),
-
-
-
-                    title:
-                        Text(
-
-                      product["name"],
-
-                    ),
-
-
-
-                    subtitle:
-                        Text(
-
-                      "Rp${product["price"]}",
-
-                    ),
-
+                    ],
 
 
                   ),
 
-                );
 
 
-              },
 
-            ),
+
+
+
+                  trailing:
+                      PopupMenuButton(
+
+
+
+                    itemBuilder:(context)=>[
+
+
+
+                      const PopupMenuItem(
+
+                        value:
+                            "edit",
+
+                        child:
+                            Text(
+                              "Edit",
+                            ),
+
+                      ),
+
+
+
+
+
+
+                      const PopupMenuItem(
+
+                        value:
+                            "delete",
+
+                        child:
+                            Text(
+                              "Hapus",
+                            ),
+
+                      ),
+
+
+
+                    ],
+
+
+
+
+
+                    onSelected:(value){
+
+
+
+                      if(value=="edit"){
+
+
+
+                        Navigator.push(
+
+                          context,
+
+                          MaterialPageRoute(
+
+                            builder: (_) =>
+
+                                EditProductPage(
+
+                                  product:
+                                      product,
+
+                                ),
+
+                          ),
+
+                        );
+
+
+                      }
+
+
+
+
+
+
+                      if(value=="delete"){
+
+
+                        confirmDelete(
+
+                          context,
+
+                          ref,
+
+                          product.id,
+
+                        );
+
+
+                      }
+
+
+
+
+                    },
+
+
+
+                  ),
+
+
+
+                ),
+
+
+
+              );
+
+
+            },
+
+
+          );
+
+
+
+        },
+
+
+
+      ),
+
 
 
     );
 
+
   }
+
+
 
 }
